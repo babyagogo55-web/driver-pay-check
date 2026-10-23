@@ -2,6 +2,7 @@
 
 トラックドライバー本人が毎日30秒で運行を記録し、月の総支給額（概算）と手当の内訳を自動集計して、会社の給与明細・運行内容手当明細と照合するスマホ用アプリ（PWA）。データは端末内（IndexedDB）にだけ保存し、外部に送らない。
 
+- **公開中：https://babyagogo55-web.github.io/driver-pay-check/** （スマホで開いて「ホーム画面に追加」）
 - 設計：[docs/design.md](docs/design.md)
 - 本人向けの使い方：[docs/user-guide.md](docs/user-guide.md)
 
