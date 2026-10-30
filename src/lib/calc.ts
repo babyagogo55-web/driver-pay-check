@@ -243,7 +243,10 @@ export function calcPeriod(
   const days = inRange.map((r) => calcDay(r, master));
   const recorded = new Set(inRange.map((r) => r.date));
   const lastCheck = opts.today && opts.today < end ? opts.today : end;
-  const missingDates = datesInRange(start, end).filter((d) => d <= lastCheck && !recorded.has(d));
+  // 使い始める前の日は「未入力」にしない（いちばん古い記録の日から数える）
+  const firstDay = records.reduce<DateStr | null>((min, r) => (min === null || r.date < min ? r.date : min), null);
+  const missingDates =
+    firstDay === null ? [] : datesInRange(start, end).filter((d) => d >= firstDay && d <= lastCheck && !recorded.has(d));
 
   const warnings: { date: DateStr; message: string }[] = [];
   for (const d of days) for (const w of d.warnings) warnings.push({ date: d.date, message: w });

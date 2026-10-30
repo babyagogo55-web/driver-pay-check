@@ -1,8 +1,8 @@
 import type { BackupFile, DailyRecord, DateStr, MapsSettings, Master, Stop, Template } from './types';
 import { HIGHWAY_CARGO_ID } from './types';
 
-// 初期値（すべて仮）。行き先名は聞き取りの文字起こしのまま「（仮）」を付けている。
-// 本人に正式名称・単価を確認したら、設定画面から書き換える。
+// 初期値。実際に使うときは blankMaster（金額は空）から始め、基本給・単価は本人が「はじめの設定」で入れる。
+// sampleMaster は「見本で試す」用とテスト用の値（すべて仮。行き先名は聞き取りの文字起こしのまま「（仮）」付き）。
 
 export function newId(prefix = 'id'): string {
   return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
@@ -21,7 +21,7 @@ export function sampleMaster(): Master {
     { id: 'c2', name: 'ケース物（仮）', unit: '点', aliases: ['ケース'], order: 2, active: true },
     { id: 'c3', name: 'パレット（仮）', unit: '枚', order: 3, active: true },
   ];
-  const from = '2020-01-01';
+  const from = FIRST_DAY;
   const base: Record<string, number[]> = {
     // [青果, ケース, パレット, 高速加算]
     d1: [30, 20, 300, 0],
@@ -68,6 +68,36 @@ export function sampleMaster(): Master {
     maps: defaultMaps(),
     isSample: true,
   };
+}
+
+/** 金額・行き先・荷物が空の設定。初めて開いたときはこれで始まる */
+export function blankMaster(): Master {
+  return {
+    ...sampleMaster(),
+    baseSalary: [],
+    distanceRateX100: [],
+    destinations: [],
+    cargoTypes: [],
+    unitPrices: [],
+    priceRevisions: [FIRST_DAY],
+    templates: [],
+    isSample: false,
+    setupDone: false,
+  };
+}
+
+/** 単価表・基本給の「最初から」を表す適用開始日 */
+export const FIRST_DAY = '2020-01-01';
+
+/** 計算に必要なのにまだ入っていない設定（画面で知らせる）。距離手当がない会社は 0 を入れれば済む */
+export function missingSetup(m: Master): string[] {
+  const out: string[] = [];
+  if (m.baseSalary.length === 0) out.push('基本給');
+  if (m.distanceRateX100.length === 0) out.push('距離手当の単価');
+  if (!m.destinations.some((d) => d.active)) out.push('行き先');
+  if (!m.cargoTypes.some((c) => c.active)) out.push('荷物の種類');
+  if (m.unitPrices.filter((p) => p.cargoTypeId !== HIGHWAY_CARGO_ID).length === 0) out.push('単価');
+  return out;
 }
 
 export function defaultMaps(): MapsSettings {

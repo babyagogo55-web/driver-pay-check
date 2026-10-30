@@ -4,7 +4,7 @@ import * as db from '../db';
 import { fetchRoute } from '../maps';
 import { priceFor, resolveDated } from '../lib/calc';
 import { isValidDate } from '../lib/dates';
-import { newId, validateBackup } from '../lib/defaults';
+import { blankMaster, newId, validateBackup } from '../lib/defaults';
 import { formatFixed } from '../lib/money';
 import { recordsCsv, reminderIcs } from '../lib/report';
 import type { BackupFile, Dated, Master } from '../lib/types';
@@ -23,12 +23,19 @@ export function SettingsScreen() {
     <div className="screen settings">
       {master.isSample && (
         <div className="banner warn">
-          今は<b>仮の値</b>が入っています。本当の金額がわかったら書き換えてください。
+          今は<b>見本の値</b>で試しています（金額は本物ではありません）。
+          <ConfirmButton className="btn small primary" onConfirm={() => void app.resetAll(blankMaster())}>
+            見本と試しの記録を消して、自分の値で始める
+          </ConfirmButton>
           <ConfirmButton className="btn small" onConfirm={() => up({ isSample: false })}>
-            書き換え終わった（注意表示を消す）
+            見本を自分で書き換えた（注意表示を消す）
           </ConfirmButton>
         </div>
       )}
+
+      <button type="button" className="btn block" onClick={() => up({ setupDone: false })}>
+        はじめの設定を順番に開く（基本給・単価など）
+      </button>
 
       <Section title="あなたの情報">
         <label className="field">
@@ -204,7 +211,7 @@ export function SettingsScreen() {
         ))}
       </Section>
 
-      <Section title="Googleマップ連携（距離・時間の目安）">
+      <Section title="Googleマップ連携（任意）">
         <MapsSettingsBox />
       </Section>
 
@@ -243,7 +250,7 @@ export function SettingsScreen() {
   );
 }
 
-function MapsSettingsBox() {
+export function MapsSettingsBox() {
   const app = useApp();
   const { maps } = app.master;
   const set = (patch: Partial<typeof maps>) => app.updateMaster((m) => ({ ...m, maps: { ...m.maps, ...patch } }));
@@ -251,6 +258,7 @@ function MapsSettingsBox() {
   const cached = Object.keys(maps.cache).length;
   return (
     <div>
+      <MapsOptionalNote />
       <p className="small">
         行き先の住所（「行き先」の欄）と営業所の住所を入れると、その日のルートの<b>距離と運転時間の目安</b>が出ます。キーがなくても「Googleマップでルートを見る」は使えます。
       </p>
@@ -333,6 +341,21 @@ function MapsSettingsBox() {
   );
 }
 
+/** 地図連携は使うかどうか本人が決める。使わなくても記録・計算・照合はすべてできる */
+export function MapsOptionalNote() {
+  return (
+    <div className="banner info">
+      <b>使うかどうかは、あなたの自由です（任意）。</b>
+      <ul className="small">
+        <li>使わなくても、記録・給料の計算・明細との照合はすべてできます。</li>
+        <li>住所だけ入れれば、APIキーなしで「Googleマップでルートを見る」が使えます（無料）。</li>
+        <li>距離と時間を自動で出すには、ご自身でGoogle Cloudに登録してAPIキーを作ります。カードの登録が必要です（無料枠の範囲なら0円）。</li>
+        <li>地図に送るのは住所と高速の有無だけです。給料・点数・氏名は送りません。</li>
+      </ul>
+    </div>
+  );
+}
+
 function Section({ title, children, open }: { title: string; children: ReactNode; open?: boolean }) {
   return (
     <details className="card section" open={open}>
@@ -404,7 +427,7 @@ interface Listable {
   active: boolean;
 }
 
-function ListEditor<T extends Listable>({
+export function ListEditor<T extends Listable>({
   items,
   onChange,
   make,
@@ -422,7 +445,7 @@ function ListEditor<T extends Listable>({
     <div>
       {sorted.map((x, i) => (
         <div key={x.id} className={'list-row' + (x.active ? '' : ' inactive')}>
-          <input className="text-input" value={x.name} aria-label="名前" onChange={(e) => set({ ...x, name: e.target.value })} />
+          <input className="text-input" value={x.name} aria-label="名前" placeholder="名前" onChange={(e) => set({ ...x, name: e.target.value })} />
           {extra?.(x, set)}
           <AliasInput value={x.aliases ?? []} onChange={(aliases) => set({ ...x, aliases })} />
           <button type="button" className="btn small" disabled={i === 0} aria-label="上へ" onClick={() => onChange(renumber(move(sorted, i, -1)))}>
@@ -460,7 +483,7 @@ function AliasInput({ value, onChange }: { value: string[]; onChange: (v: string
 }
 
 /** 単価表。改定日ごとに「その日から変わった単価」だけを入れる。空欄は前の単価を引き継ぐ */
-function PriceTable() {
+export function PriceTable() {
   const app = useApp();
   const { master } = app;
   const revisions = [...new Set([...master.priceRevisions, ...master.unitPrices.map((p) => p.from)])].sort();

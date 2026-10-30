@@ -4,7 +4,7 @@ import { VoiceInput } from '../components/VoiceInput';
 import { RouteCard } from '../components/RouteCard';
 import { calcDay, calcPeriod } from '../lib/calc';
 import { addDays, periodOf, shortJa } from '../lib/dates';
-import { applyTemplate, blankRecord, copyFrom, newStop, templateFromRecord } from '../lib/defaults';
+import { applyTemplate, blankRecord, copyFrom, missingSetup, newStop, templateFromRecord } from '../lib/defaults';
 import { km, yen } from '../lib/money';
 import type { DailyRecord, Stop } from '../lib/types';
 import { useApp } from '../store';
@@ -72,10 +72,16 @@ export function RecordScreen() {
         </button>
       )}
 
-      {master.isSample && (
-        <div className="banner warn">
-          単価・基本給は<b>仮の値</b>です。「設定」で本当の金額に直してください。
-        </div>
+      {master.isSample ? (
+        <button type="button" className="banner warn" onClick={() => app.setTab('settings')}>
+          いまは<b>見本の値</b>で試しています（金額は本物ではありません）。自分の値で始めるときは → 設定
+        </button>
+      ) : (
+        missingSetup(master).length > 0 && (
+          <button type="button" className="banner warn" onClick={() => app.updateMaster((m) => ({ ...m, setupDone: false }))}>
+            まだ入っていない設定：<b>{missingSetup(master).join('・')}</b>（その分は0円で計算します）→ 入れる
+          </button>
+        )
       )}
       {missing.length > 0 && (
         <button type="button" className="banner alert" onClick={() => app.setTab('calendar')}>

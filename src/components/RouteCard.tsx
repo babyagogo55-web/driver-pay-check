@@ -61,7 +61,7 @@ export function RouteCard({ record, put }: { record: DailyRecord; put: (r: Daily
       <h2>ルート・時間</h2>
       {'error' in plan ? (
         <p className="muted-text small">
-          {setupHint ? '「設定 → Googleマップ連携」で営業所と行き先の住所を入れると、地図で距離と時間の目安が出ます。' : plan.error}
+          {setupHint ? '（任意）「設定 → Googleマップ連携」で住所を入れると、地図で距離と時間の目安が出ます。使わなくても記録と計算はできます。' : plan.error}
         </p>
       ) : (
         <>

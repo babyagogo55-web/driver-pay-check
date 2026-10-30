@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { calcDay, calcPeriod, distanceKm10, priceFor, resolveDated } from './calc';
 import { addDays, datesInRange, isValidDate, periodOf, periodRange, todayStr } from './dates';
-import { applyTemplate, blankRecord, copyFrom, isEmptyRecord, sampleMaster, templateFromRecord } from './defaults';
+import { applyTemplate, blankMaster, blankRecord, copyFrom, isEmptyRecord, missingSetup, sampleMaster, templateFromRecord } from './defaults';
 import { formatFixed, parseFixed, parseYen, roundDiv, signedYen } from './money';
 import type { DailyRecord, Master } from './types';
 import { HIGHWAY_CARGO_ID } from './types';
@@ -298,6 +298,11 @@ describe('月の集計', () => {
   it('未入力の日は今日までだけ数える（休みは記録済み）', () => {
     expect(p.missingDates).toEqual(['2026-10-04', '2026-10-05']);
   });
+  it('使い始める前の日は未入力にしない', () => {
+    expect(calcPeriod([], master(), '2026-10', { today: '2026-10-30' }).missingDates).toEqual([]);
+    const late = calcPeriod([rec('2026-10-28', { dayOff: true })], master(), '2026-10', { today: '2026-10-30' });
+    expect(late.missingDates).toEqual(['2026-10-29', '2026-10-30']);
+  });
   it('締め日をまたぐ：20日締めの11月分は 10/21〜11/20', () => {
     const p2 = calcPeriod(
       [
@@ -337,6 +342,30 @@ describe('月の集計', () => {
   });
   it('基本給が未設定なら警告', () => {
     expect(calcPeriod([], master({ baseSalary: [] }), '2026-10').warnings[0].message).toContain('基本給');
+  });
+});
+
+describe('はじめの設定（金額は本人が入れる）', () => {
+  it('初期状態は金額が空で、足りない設定をすべて挙げる', () => {
+    const m = blankMaster();
+    expect(missingSetup(m)).toEqual(['基本給', '距離手当の単価', '行き先', '荷物の種類', '単価']);
+    expect(m.templates).toEqual([]);
+  });
+  it('空の設定でも計算は止まらず、0円と警告になる', () => {
+    const m = blankMaster();
+    const p = calcPeriod([rec('2026-10-01', { distance: { mode: 'direct', km10: 1000 } })], m, '2026-10');
+    expect(p.gross).toBe(0);
+    expect(p.warnings.map((w) => w.message).join()).toContain('基本給');
+    expect(p.warnings.map((w) => w.message).join()).toContain('距離単価');
+  });
+  it('距離手当がない会社は 0円/km を入れれば足りない一覧から消える', () => {
+    const m = { ...sampleMaster(), distanceRateX100: [{ from: '2020-01-01', value: 0 }] };
+    expect(missingSetup(m)).toEqual([]);
+  });
+  it('高速加算だけでは「単価」を入れたことにしない', () => {
+    const s = sampleMaster();
+    const m = { ...s, unitPrices: s.unitPrices.filter((p) => p.cargoTypeId === HIGHWAY_CARGO_ID) };
+    expect(missingSetup(m)).toEqual(['単価']);
   });
 });
 

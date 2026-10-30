@@ -1,14 +1,23 @@
 import 'fake-indexeddb/auto';
 import { describe, expect, it } from 'vitest';
 import * as db from './db';
-import { blankRecord } from './lib/defaults';
+import { blankMaster, blankRecord } from './lib/defaults';
+import type { Master } from './lib/types';
 import { emptyStatement } from './lib/reconcile';
 
 describe('端末内保存（IndexedDB）', () => {
-  it('初回はサンプル設定を作る', async () => {
+  it('初回は金額が空の設定で始まり、はじめの設定を出す', async () => {
     const m = await db.loadMaster();
-    expect(m.isSample).toBe(true);
-    expect(m.distanceRateX100[0].value).toBe(500);
+    expect(m.isSample).toBe(false);
+    expect(m.setupDone).toBe(false);
+    expect(m.baseSalary).toEqual([]);
+    expect(m.unitPrices).toEqual([]);
+    expect(m.distanceRateX100).toEqual([]);
+  });
+  it('setupDone が無い古いデータは、設定済みとして扱う', () => {
+    const { setupDone: _d, ...old } = blankMaster();
+    expect(db.withDefaults(old as Master).setupDone).toBe(true);
+    expect(db.withDefaults({ ...old, setupDone: false } as Master).setupDone).toBe(false);
   });
   it('記録の保存・読み込み・削除', async () => {
     await db.saveRecord({ ...blankRecord('2026-10-01'), memo: 'a' });

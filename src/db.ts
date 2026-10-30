@@ -1,4 +1,4 @@
-import { defaultMaps, sampleMaster } from './lib/defaults';
+import { blankMaster, defaultMaps } from './lib/defaults';
 import type { BackupFile, DailyRecord, Master, PeriodStr, Statement } from './lib/types';
 
 // 端末内保存（IndexedDB）。外部サーバーには一切送らない。
@@ -41,14 +41,14 @@ function tx<T>(store: string, mode: IDBTransactionMode, fn: (s: IDBObjectStore) 
 export async function loadMaster(): Promise<Master> {
   const m = await tx<Master | undefined>('kv', 'readonly', (s) => s.get('master'));
   if (m) return withDefaults(m);
-  const fresh = sampleMaster();
+  const fresh = blankMaster();
   await saveMaster(fresh);
   return fresh;
 }
 
 /** 後から増えた設定項目を補う（古い版で作ったデータでも動くように） */
 export function withDefaults(m: Master): Master {
-  return { ...m, maps: { ...defaultMaps(), ...(m.maps ?? {}) } };
+  return { ...m, setupDone: m.setupDone ?? true, maps: { ...defaultMaps(), ...(m.maps ?? {}) } };
 }
 
 export const saveMaster = (m: Master) => tx('kv', 'readwrite', (s) => s.put(m, 'master'));

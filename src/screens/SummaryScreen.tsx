@@ -5,6 +5,7 @@ import { addMonths, periodLabel, shortJa } from '../lib/dates';
 import { km, yen } from '../lib/money';
 import { recordsCsv } from '../lib/report';
 import { formatMinutes } from '../lib/route';
+import { missingSetup } from '../lib/defaults';
 import { useApp } from '../store';
 
 // 月の集計：総支給額（概算）と内訳
@@ -54,7 +55,10 @@ export function SummaryScreen() {
           運行した日 {result.workDays}日／記録のない日 {result.missingDates.length}日
           {result.workMinutesTotal > 0 && `／拘束時間 合計 ${formatMinutes(result.workMinutesTotal)}`}
         </p>
-        {master.isSample && <p className="warn-text">⚠ 単価・基本給が仮の値のままです（設定で変更）</p>}
+        {master.isSample && <p className="warn-text">⚠ 見本の値で計算しています（金額は本物ではありません）</p>}
+        {!master.isSample && missingSetup(master).length > 0 && (
+          <p className="warn-text">⚠ まだ入っていない設定：{missingSetup(master).join('・')}（その分は0円で計算しています）</p>
+        )}
       </section>
 
       {result.missingDates.length > 0 && (

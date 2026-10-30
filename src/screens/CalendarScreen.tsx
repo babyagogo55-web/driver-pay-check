@@ -15,16 +15,18 @@ export function CalendarScreen() {
   const dates = datesInRange(start, end);
   const lead = weekday(start);
 
+  // 使い始める前の日は「未入力」にしない
+  const firstDay = Object.keys(records).sort()[0] ?? today + '~';
   const cells = useMemo(
     () =>
       dates.map((d) => {
         const r = records[d];
-        if (!r) return { d, kind: d <= today ? 'missing' : 'future', amount: 0, warn: false };
+        if (!r) return { d, kind: d > today ? 'future' : d >= firstDay ? 'missing' : 'before', amount: 0, warn: false };
         if (r.dayOff) return { d, kind: 'off', amount: 0, warn: false };
         const res = calcDay(r, master);
         return { d, kind: 'done', amount: res.total, warn: res.warnings.length > 0 };
       }),
-    [dates.join(), records, master, today],
+    [dates.join(), records, master, today, firstDay],
   );
   const missing = cells.filter((c) => c.kind === 'missing').length;
   const done = cells.filter((c) => c.kind === 'done' || c.kind === 'off').length;

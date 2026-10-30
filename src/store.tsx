@@ -26,6 +26,8 @@ interface AppState {
   statementOf: (p: PeriodStr) => Statement;
   putStatement: (s: Statement) => void;
   replaceAll: (b: BackupFile) => Promise<void>;
+  /** 記録・明細を全部消して、設定を入れ替える（見本で試したあと自分の値で始めるとき） */
+  resetAll: (m: Master) => Promise<void>;
   today: () => DateStr;
 }
 
@@ -136,6 +138,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
           records: Object.fromEntries(b.records.map((r) => [r.date, r])),
           statements: Object.fromEntries(b.statements.map((s) => [s.period, s])),
         });
+      },
+      resetAll: async (m) => {
+        const fresh = { ...m, maps: { ...m.maps, apiKey: master.maps.apiKey } };
+        await db.importAll({ app: 'driver-pay-check', schemaVersion: 1, exportedAt: new Date().toISOString(), master: fresh, records: [], statements: [] });
+        setLoaded({ master: fresh, records: {}, statements: {} });
+        setTab('record');
       },
       today: () => todayStr(new Date(), master.dayStartHour),
     };

@@ -125,8 +125,10 @@ export interface Master {
   templates: Template[];
   reminderTime: string;
   maps: MapsSettings;
-  /** 仮のサンプル値のままかどうか（画面に注意を出す） */
+  /** 見本の値で試している状態か（画面に注意を出す） */
   isSample: boolean;
+  /** はじめの設定（基本給・単価など本人の値の入力）を終えたか。古いデータには無い＝終えた扱い */
+  setupDone?: boolean;
 }
 
 export interface MapsSettings {

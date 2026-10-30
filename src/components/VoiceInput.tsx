@@ -38,6 +38,7 @@ export function VoiceInput({ record, onApply }: { record: DailyRecord; onApply: 
   const before = useRef<DailyRecord | null>(null);
   const lastApplied = useRef('');
   const recRef = useRef<Recognition | null>(null);
+  const example = voiceExample(app.master);
   const finalText = useRef('');
 
   // 日付を変えたら結果表示を消す
@@ -142,10 +143,10 @@ export function VoiceInput({ record, onApply }: { record: DailyRecord; onApply: 
           ● 聞いています…（押すと終わり）
         </button>
       )}
-      {listening && <p className="voice-live">{interim || '例：「太田垣 青果50、第一柿 ケース20、距離280キロ」'}</p>}
+      {listening && <p className="voice-live">{interim || `例：「${example}」`}</p>}
       {!listening && !result && (
         <p className="muted-text small">
-          例：「いつもの便A、太田垣 青果55、距離290キロ」／「第一柿 ケース25」（その所だけ直ります）
+          例：「{example}」（言った所だけ直ります）
         </p>
       )}
       {!listening && !showBox && (
@@ -216,4 +217,12 @@ export function VoiceInput({ record, onApply }: { record: DailyRecord; onApply: 
       {Ctor && <p className="muted-text tiny">※音声はスマホの音声認識サービス（Google・Apple）で文字にします。記録や金額は送りません。</p>}
     </section>
   );
+}
+
+/** 自分で登録した行き先・荷物の名前で例文を作る（「（仮）」などの注記は外す） */
+function voiceExample(m: Master): string {
+  const plain = (x: string) => x.replace(/[（(][^）)]*[）)]/g, '').trim();
+  const d = m.destinations.filter((x) => x.active && plain(x.name)).sort((a, b) => a.order - b.order)[0];
+  const c = m.cargoTypes.filter((x) => x.active && plain(x.name)).sort((a, b) => a.order - b.order)[0];
+  return `${d ? plain(d.name) : '行き先'} ${c ? plain(c.name) : '荷物'}50、距離280キロ、出発21時半`;
 }

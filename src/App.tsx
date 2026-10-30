@@ -2,6 +2,7 @@ import { CalendarScreen } from './screens/CalendarScreen';
 import { ReconcileScreen } from './screens/ReconcileScreen';
 import { RecordScreen } from './screens/RecordScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
+import { SetupScreen } from './screens/SetupScreen';
 import { SummaryScreen } from './screens/SummaryScreen';
 import { useApp, type Tab } from './store';
 
@@ -15,6 +16,13 @@ const TABS: { tab: Tab; label: string; icon: string }[] = [
 
 export function App() {
   const app = useApp();
+  if (app.master.setupDone === false) {
+    return (
+      <main>
+        <SetupScreen />
+      </main>
+    );
+  }
   return (
     <>
       <main>
